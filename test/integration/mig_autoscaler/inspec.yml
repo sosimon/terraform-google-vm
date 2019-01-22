@@ -24,3 +24,8 @@ attributes:
   - name: region
     required: true
     type: string
+depends:
+  - name: gcp-resources
+    url: https://github.com/inspec/inspec-gcp/archive/master.tar.gz
+supports:
+  - platform: gcp

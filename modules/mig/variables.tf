@@ -170,3 +170,8 @@ variable "named_ports" {
   type        = "list"
   default     = []
 }
+
+variable "wait_for_instances" {
+  description = "Whether to wait for all instances to be created/updated before returning."
+  default     = "false"
+}

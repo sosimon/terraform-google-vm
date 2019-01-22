@@ -26,104 +26,28 @@ expected_instance_groups = 1
 control "MIG" do
   title "Autoscaling Configuration"
 
-  describe command("gcloud --project=#{project_id} compute instances list --format=json --filter='name~^mig-autoscaler*'") do
-    its(:exit_status) { should eq 0 }
-    its(:stderr) { should eq '' }
-
-    let!(:data) do
-      if subject.exit_status == 0
-        JSON.parse(subject.stdout)
-      else
-        []
-      end
-    end
-
-    describe "number of instances" do
-      it "should be #{expected_instances}" do
-        expect(data.length).to eq(expected_instances)
-      end
-    end
-
-    describe "network tags" do
-      it "should include 'foo'" do
-        data.each do |instance|
-          expect(instance['tags']['items']).to include("foo")
-        end
-      end
-    end
-
-    describe "labels" do
-      it "should include 'environment' key" do
-        data.each do |instance|
-          expect(instance['labels']).to include("environment")
-        end
-      end
-    end
-
-    describe "labels" do
-      it "'environment' should have value 'dev'" do
-        data.each do |instance|
-          expect(instance['labels']['environment']).to eq("dev")
-        end
-      end
-    end
-
+  describe google_compute_region_instance_group_manager(project: project_id, region: 'us-central1', name: "mig-autoscaler-mig") do
+    it { should exist }
+    its('target_size') { should eq 4 }
+    # TODO: add check 'autoscaled' == "yes"
+    # TODO: add check 'autoscaler'.'autoscalingPolicy'.'cpuUtilization'.'utilizationTarget' == 0.6
   end
 
-  describe command("gcloud --project=#{project_id} compute instance-groups list --format=json --filter='name~^mig-autoscaler*'") do
-    its(:exit_status) { should eq 0 }
-    its(:stderr) { should eq '' }
-
-    let!(:data) do
-      if subject.exit_status == 0
-        JSON.parse(subject.stdout)
-      else
-        []
-      end
-    end
-
-    describe "number of instance groups" do
-      it "should be #{expected_instance_groups}" do
-        expect(data.length).to eq(expected_instance_groups)
-      end
-    end
+  describe google_compute_instances(project: project_id, zone: "us-central1-a") do
+    it { should exist }
+    its('count') { should eq 1 }
   end
 
-  describe command("gcloud --project=#{project_id} compute instance-groups managed list --format=json --filter='name~^mig-autoscaler*'") do
-    its(:exit_status) { should eq 0 }
-    its(:stderr) { should eq '' }
+  describe google_compute_instances(project: project_id, zone: "us-central1-a") do
+    its('tag_count') { should eq 2 }
+  end
 
-    let!(:data) do
-      if subject.exit_status == 0
-        JSON.parse(subject.stdout)
-      else
-        []
-      end
-    end
+  describe google_compute_instances(project: project_id, zone: "us-central1-a") do
+    its('label_keys') { should include "environment" }
+  end
 
-    describe "number of instance groups" do
-      it "should be #{expected_instance_groups}" do
-        expect(data.length).to eq(expected_instance_groups)
-      end
-    end
-
-    describe "autoscaled" do
-      it "should be yes" do
-        expect(data[0]['autoscaled']).to eq("yes")
-      end
-    end
-
-    describe "autoscaler scaling policy" do
-      it "minNumReplicas should be 4" do
-        expect(data[0]['autoscaler']['autoscalingPolicy']['minNumReplicas']).to eq(4)
-      end
-    end
-
-    describe "autoscaler scaling policy" do
-      it "cpuUtilization target should be 0.6" do
-        expect(data[0]['autoscaler']['autoscalingPolicy']['cpuUtilization']['utilizationTarget']).to eq(0.6)
-      end
-    end
+  describe google_compute_instances(project: project_id, zone: "us-central1-a").label_value_by_key("environment") do
+    it { should eq 'dev' }
   end
 
 end

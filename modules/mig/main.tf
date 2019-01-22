@@ -32,11 +32,12 @@ resource "google_compute_region_instance_group_manager" "mig" {
     instance_template = "${var.instance_template}"
   }
 
-  name         = "${var.hostname}-mig"
-  region       = "${var.region}"
-  named_port   = ["${var.named_ports}"]
-  target_pools = ["${var.target_pools}"]
-  target_size  = "${var.autoscaling_enabled ? var.min_replicas : var.target_size}"
+  name               = "${var.hostname}-mig"
+  region             = "${var.region}"
+  named_port         = ["${var.named_ports}"]
+  target_pools       = ["${var.target_pools}"]
+  target_size        = "${var.autoscaling_enabled ? var.min_replicas : var.target_size}"
+  wait_for_instances = "${var.wait_for_instances}"
 
   auto_healing_policies {
     health_check      = "${var.http_healthcheck_enable || var.tcp_healthcheck_enable ? element(concat(google_compute_health_check.http_healthcheck.*.self_link, google_compute_health_check.tcp_healthcheck.*.self_link, list("")),0) : ""}"
